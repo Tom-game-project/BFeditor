@@ -11,6 +11,8 @@ import hashlib #テキストが変更されたかどうかを確かめたい
 from bf import BrainFuck
 from enum import Enum
 
+import webbrowser
+
 class BFlags(Enum):
     INACTIVE:int = 0
     ACTIVE:int = 1
@@ -45,6 +47,8 @@ class BFeditor:
         self.menu_help = tk.Menu(self.root, tearoff=False)
         self.menu_bar.add_cascade(label='Help', menu=self.menu_help)
         self.menu_help.add_command(label='ASCII code table', command=self.open_ascii_code_table)
+        self.menu_help.add_command(label='See README.md on github', command=lambda :webbrowser.open("https://github.com/Tom-game-project/BFeditor"))
+
 
         # PanedWindowを作成
         self.paned_window = ttk.PanedWindow(self.root, orient=tk.VERTICAL)
