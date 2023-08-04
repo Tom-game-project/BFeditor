@@ -422,7 +422,10 @@ class BFeditor:
             self.root.title(self.title_filename_setter())
     def raw_code_text_on_modified(self,e):
         """
-        工事中、onmodifiedは最初から実装されていないので自分で実装する必要がある。前回と比較して、変更されたか否かのみが知りたい。hashを比較することによって変更されたか否かの情報のみを取得できる
+        工事中、
+        onmodifiedは最初から実装されていないので自分で実装する必要がある。
+        前回と比較して、変更されたか否かのみが知りたい。
+        そのために、hashを比較することによって変更されたか否かの情報のみを取得できる
         ```python
         hs = hashlib.sha224("こんにちは".encode()).hexdigest()
         ```
