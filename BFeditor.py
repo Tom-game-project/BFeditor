@@ -2,6 +2,7 @@
 software:
 name :BFeditor
 
+written by Tom0427
 """
 
 import tkinter as tk
@@ -9,7 +10,7 @@ from tkinter import filedialog,ttk,messagebox
 import os
 import hashlib #テキストが変更されたかどうかを確かめたい
 from bf import BrainFuck
-from enum import Enum
+from enum import Enum,auto
 
 import webbrowser
 
@@ -21,8 +22,9 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=lo
 
 
 class BFlags(Enum):
-    INACTIVE:int = 0
-    ACTIVE:int = 1
+    # BFeditorの状態フラグ
+    INACTIVE:int = auto()
+    ACTIVE:int = auto()
 
 
 class BFeditor:
@@ -37,7 +39,7 @@ class BFeditor:
         """
         self.text_length:int = 4
         self.row_length:int = 10
-        self.default_base = 16 # decimalに設定
+        self.default_base = "decimal" # decimalに設定
 
 
         self.root = tk.Tk()
@@ -146,34 +148,38 @@ class BFeditor:
         self.selected_option_var = tk.StringVar()
 
         self.memory_base_options=tk.Frame(self.memory_frame)
-        self.memory_base_options_bin    =tk.Radiobutton(
+        self.memory_base_options_bin=tk.Radiobutton(
             self.memory_base_options,
             text="bin",
             variable=self.selected_option_var,
-            value="bin", command=self.on_radio_button_selected)
+            value="bin", command=self.on_radio_button_selected
+            )
         self.memory_base_options_decimal=tk.Radiobutton(
             self.memory_base_options,
             text="decimal",
             variable=self.selected_option_var,
             value="decimal",
-            command=self.on_radio_button_selected)
-        self.memory_base_options_hex    =tk.Radiobutton(
-        self.memory_base_options,
-        text="hex",
-        variable=self.selected_option_var,
-        value="hex", command=self.on_radio_button_selected)
+            command=self.on_radio_button_selected
+            )
+        self.memory_base_options_hex=tk.Radiobutton(
+            self.memory_base_options,
+            text="hex",
+            variable=self.selected_option_var,
+            value="hex",
+            command=self.on_radio_button_selected
+            )
 
-        if self.default_base==10:
-            self.selected_option_var.set("decimal")
-            self.text_length=3
-        elif self.default_base==16:
-            self.selected_option_var.set("hex")
-            self.text_length=2
-        elif self.default_base==16:
-            self.selected_option_var.set("bin")
-            self.text_length=8
-        else:
-            raise BaseException(f"{self.default_base} is unsupported base")
+        self.selected_option_var.set(self.default_base)
+
+        match self.default_base:
+            case "decimal":
+                self.text_length=3
+            case "bin":
+                self.text_length=8
+            case "hex":
+                self.text_length=2
+            case _:
+                raise BaseException(f"{self.default_base} is unsupported option")
         # 各種ウィジェットの設置
 
         self.memory_text.configure(state="disabled")
@@ -377,7 +383,16 @@ class BFeditor:
     #on some event
     def on_radio_button_selected(self):
         selected_option = self.selected_option_var.get()
-        print(f"selected option: {selected_option}")
+        logging.debug(f"selected option: {selected_option}")
+        match selected_option:
+            case "decimal":
+                self.text_length=3
+            case "bin":
+                self.text_length=8
+            case "hex":
+                self.text_length=2
+            case _:
+                raise BaseException(f"{selected_option} is unsupported option")
     def stoped(self):
         """
         # 一時停止する
