@@ -21,6 +21,18 @@ class BFlags(Enum):
 class BFeditor:
     def __init__(self) -> None:
 
+
+        #設定ファイル
+        """
+        デフォルト設定
+        memory size:100
+        speed:10ms
+        """
+        self.text_length:int = 4
+        self.row_length:int = 10
+        self.default_base = 16 # decimalに設定
+
+
         self.root = tk.Tk()
         self.root.title("BFeditor")
         self.root.geometry('600x500')
@@ -143,7 +155,18 @@ class BFeditor:
         text="hex",
         variable=self.selected_option_var,
         value="hex", command=self.on_radio_button_selected)
-        self.selected_option_var.set("decimal")
+
+        if self.default_base==10:
+            self.selected_option_var.set("decimal")
+            self.text_length=3
+        elif self.default_base==16:
+            self.selected_option_var.set("hex")
+            self.text_length=2
+        elif self.default_base==16:
+            self.selected_option_var.set("bin")
+            self.text_length=8
+        else:
+            raise BaseException(f"{self.default_base} is unsupported base")
         # 各種ウィジェットの設置
 
         self.memory_text.configure(state="disabled")
@@ -185,15 +208,6 @@ class BFeditor:
         self.output_text.configure(state="disabled")
         self.output_text.grid(row=0,column=0)
         self.output_scrollbar.grid(row=0,column=1)
-
-        #設定ファイル
-        """
-        デフォルト設定
-        memory size:100
-        speed:10ms
-        """
-        self.text_length:int = 4
-        self.row_length:int = 10
 
         #最初はfilenameが何も設定されていない状態にする
         """
@@ -241,7 +255,8 @@ class BFeditor:
         self.memory_change(0,0)
     def process(self):
         i,j = next(self.bf_generator)
-        self.memory_change(*self.brain_fuck.state())
+        pointer,value=self.brain_fuck.state()
+        self.memory_change(pointer,value)
         self.code_highlight(i)
         self.operation_show()
         self.output(j)
