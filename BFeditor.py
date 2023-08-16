@@ -13,6 +13,13 @@ from enum import Enum
 
 import webbrowser
 
+# dev tools
+
+import logging
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+
+
 class BFlags(Enum):
     INACTIVE:int = 0
     ACTIVE:int = 1
@@ -245,6 +252,11 @@ class BFeditor:
         self.output_text.configure(state="normal")
         self.output_text.delete("1.0",tk.END)
         self.output_text.configure(state="disabled")
+        # memory option immutableにする
+        self.memory_base_options_bin.configure(state="disabled")
+        self.memory_base_options_decimal.configure(state="disabled")
+        self.memory_base_options_hex.configure(state="disabled")
+
         #step表示初期化
         self.operation_STEP_label.configure(text="Steps: 0")
         #generatorの作成
@@ -261,7 +273,13 @@ class BFeditor:
         self.operation_show()
         self.output(j)
     def end(self):
-        print("終了")
+        logging.debug("プロセスの終了")
+        # memory option mutableにする
+        self.memory_base_options_bin.configure(state="normal")
+        self.memory_base_options_decimal.configure(state="normal")
+        self.memory_base_options_hex.configure(state="normal")
+        
+        #
         self.process_state = BFlags.INACTIVE
         self.operation_RUN_button.configure(text="RUN",command=self.run)
         self.input_text.configure(state="normal")
@@ -311,6 +329,7 @@ class BFeditor:
         self.memory_text.configure(state="normal")
         self.memory_text.delete("1.0",tk.END)
         self.memory_text.configure(state="disabled")
+        
         for i,j in enumerate(self.chunked(self.brain_fuck.memory,self.row_length)):
             self.memory_text.configure(state="normal")
             self.memory_text.insert(f"{i+1}.0"," ".join([str(k).rjust(self.text_length,"0") for k in j])+"\n")
@@ -326,7 +345,17 @@ class BFeditor:
         start = f"{a+1}.{(self.text_length+1)*b}"
         end = f"{a+1}.{(self.text_length+1)*b+self.text_length}"
         self.memory_text.delete(start,end)
-        self.memory_text.insert(start,str(newdata).rjust(self.text_length,"0"))
+        selected_option = self.selected_option_var.get()
+        match selected_option:
+            case "decimal":
+                _newdata = newdata
+            case "bin":
+                _newdata = bin(newdata)[2:]
+            case "hex":
+                _newdata = hex(newdata)[2:]
+            case _:
+                raise BaseException(f"{selected_option} is unsupported option")
+        self.memory_text.insert(start,str(_newdata).rjust(self.text_length,"0"))
         self.memory_text.tag_delete("memoryhighlight")
         self.memory_text.tag_add("memoryhighlight",start,end)
         self.memory_text.tag_config("memoryhighlight", background="black", foreground="white")
@@ -347,7 +376,6 @@ class BFeditor:
         return "BFeditor" if splited_filename == None else f"{splited_filename} - Bfeditor" if self.saved else f"*{splited_filename} - BFeditor"
     #on some event
     def on_radio_button_selected(self):
-
         selected_option = self.selected_option_var.get()
         print(f"selected option: {selected_option}")
     def stoped(self):
@@ -362,6 +390,12 @@ class BFeditor:
         """
         # プロセスを中断する
         """
+        logging.debug("プロセスの終了")
+        # memory option mutableにする
+        self.memory_base_options_bin.configure(state="normal")
+        self.memory_base_options_decimal.configure(state="normal")
+        self.memory_base_options_hex.configure(state="normal")
+        
         self.operation_RUN_button.configure(text="RUN",command=self.run)
         self.input_text.configure(state="normal")
         #self.root.after_cancel(self.run_id)
