@@ -122,17 +122,39 @@ class BFeditor:
             )
         # スクロールバーをListboxに反映
         self.memory_text["yscrollcommand"] = self.memory_scrollbar_vertical.set
-        self.memory_scrollbar_horizontal = tk.Scrollbar(
-            self.memory_frame, orient=tk.HORIZONTAL,
-            command=self.raw_code_text.xview
-            )
-        self.memory_text["xscrollcommand"] = self.memory_scrollbar_horizontal.set
+
+        #進数オプションの設置
+        self.selected_option_var = tk.StringVar()
+
+        self.memory_base_options=tk.Frame(self.memory_frame)
+        self.memory_base_options_bin    =tk.Radiobutton(
+            self.memory_base_options,
+            text="bin",
+            variable=self.selected_option_var,
+            value="bin", command=self.on_radio_button_selected)
+        self.memory_base_options_decimal=tk.Radiobutton(
+            self.memory_base_options,
+            text="decimal",
+            variable=self.selected_option_var,
+            value="decimal",
+            command=self.on_radio_button_selected)
+        self.memory_base_options_hex    =tk.Radiobutton(
+        self.memory_base_options,
+        text="hex",
+        variable=self.selected_option_var,
+        value="hex", command=self.on_radio_button_selected)
+        self.selected_option_var.set("decimal")
         # 各種ウィジェットの設置
 
         self.memory_text.configure(state="disabled")
         self.memory_text.grid(row=0,column=0,sticky=(tk.N, tk.S,tk.W,tk.E))
         self.memory_scrollbar_vertical.grid(row=0, column=1, sticky=(tk.N, tk.S))
-        self.memory_scrollbar_horizontal.grid(row=1,column=0,sticky=(tk.E,tk.W))
+
+        self.memory_base_options_bin.grid(row=0,column=0)
+        self.memory_base_options_decimal.grid(row=0,column=1)
+        self.memory_base_options_hex.grid(row=0,column=2)
+
+        self.memory_base_options.grid(row=1,column=0,columnspan=2)
 
         #code_frame
         self.code_text = tk.Text(self.code_frame,height=0)
@@ -309,6 +331,10 @@ class BFeditor:
         splited_filename = os.path.split(self.filename)[-1]
         return "BFeditor" if splited_filename == None else f"{splited_filename} - Bfeditor" if self.saved else f"*{splited_filename} - BFeditor"
     #on some event
+    def on_radio_button_selected(self):
+
+        selected_option = self.selected_option_var.get()
+        print(f"selected option: {selected_option}")
     def stoped(self):
         """
         # 一時停止する
