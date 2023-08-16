@@ -107,7 +107,7 @@ class BrainFuck():
         while i < len(self.code):
             i,j = self.process(i)
             yield i,j
-    def state(self)->tuple:
+    def state(self)->tuple[int,int]:
         return self.pointer,self.memory[self.pointer]
     def code_extractor(self,code)->str:
         return "".join([i for i in code if i in [">","<",",",".","+","-","[","]"]])
