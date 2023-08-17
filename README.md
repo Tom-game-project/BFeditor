@@ -9,13 +9,13 @@ python BFeditor.py
 上のコマンドを実行すると下のようなウィンドウが開きます。
 pythonをインストールしていない場合はインストールが必要になります
 
-![img_00.png](img/img_00.png)
+![img_00.png](img/img_01.png)
 
 Editorに実行したいコードを入力しRUNを押します。
 
-![BFeditor.gif](img/BFeditor.gif)
+![helloworld.gif](img/helloworld.gif)
 
+インプットストリーム機能によって、brainfuckコードに文字が入力される様子が可視化されます
 
-## bug
+![input.gif](img/input.gif)
 
-- ファイルの保存が怪しい。
