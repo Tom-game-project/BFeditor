@@ -275,7 +275,13 @@ class BFeditor:
         i,j = next(self.bf_generator)
         pointer,value=self.brain_fuck.state()
         self.memory_change(pointer,value)
+
+        #現在どこを実行しているのかを表示する
         self.code_highlight(i)
+
+        #input欄内のハイライト（どこまでが入力として使われたか調べる）
+        self.input_stream_highlight()
+        
         self.operation_show()
         self.output(j)
     def end(self):
@@ -331,11 +337,26 @@ class BFeditor:
         self.code_text.tag_delete("codehighlight")
         self.code_text.tag_add("codehighlight", f"1.{i}", f"1.{i+1}")
         self.code_text.tag_config("codehighlight", background="black", foreground="white")
+    
+    def input_stream_highlight_init(self):
+        # input highlightの初期化
+        self.input_text.tag_delete("inputhighlight")
+    def input_stream_highlight(self):
+        # 考慮すべきこと
+        # 改行が含まれている場合
+        self.input_text.tag_delete("inputhighlight")
+        logging.debug(
+            self.brain_fuck.input_newline_count_list
+        )
+        for i,j in enumerate(self.brain_fuck.input_newline_count_list):
+            #i:int j:int
+            self.input_text.tag_add("inputhighlight", f"{i+1}.0", f"{i+1}.{j}")
+        self.input_text.tag_config("inputhighlight", background="gray", foreground="white")
+    
     def memory_init(self):
         self.memory_text.configure(state="normal")
         self.memory_text.delete("1.0",tk.END)
         self.memory_text.configure(state="disabled")
-        
         for i,j in enumerate(self.chunked(self.brain_fuck.memory,self.row_length)):
             self.memory_text.configure(state="normal")
             self.memory_text.insert(f"{i+1}.0"," ".join([str(k).rjust(self.text_length,"0") for k in j])+"\n")
