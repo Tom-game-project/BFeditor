@@ -18,8 +18,13 @@ class BrainFuck():
         self.code=self.code_extractor(code)
         self.memory_size=memory_size
         self.memory=[0 for i in range(memory_size)]
-        self.pointer=0
-        self.input_list=list()
+        self.pointer:int=0
+        self.input_list:list=list()
+        
+        #self.input_count:int=0
+        #self.input_newline_count:int = 1
+        self.init_input_counter()
+
         self.output:list=[]
         self.step=0
     def set_input_stream(self,list_):
@@ -30,7 +35,22 @@ class BrainFuck():
         最初に全ての入力を決めてgeneratorとして実行ループの中に入力を送出できる仕組みを提供する。
         繰り返し入力を要求するようなプログラムの中で、入力の終了には0を返す。
         """
-        self.input_=(i for i in list(list_)+[None])
+        self.input_ = self.input_iter(list_)
+    def input_iter(self,list_):
+        for i in list(list_)+[None]:
+            if i=="\n":
+                self.input_count=0
+                self.input_newline_count+=1
+                self.input_newline_count_list.append(0)
+            else:
+                self.input_count+=1
+                self.input_newline_count_list[self.input_newline_count] = self.input_count
+            yield i
+    def init_input_counter(self):
+        self.input_count:int=0
+        self.input_newline_count:int=0
+        self.input_newline_count_list:list=[0]#一行目から始まるため
+    
     def process(self,index):
         i=index
         j=None
@@ -104,10 +124,11 @@ class BrainFuck():
         self.stack = []
         i = 0
         self.eof_reached=0
+        self.init_input_counter()
         while i < len(self.code):
             i,j = self.process(i)
             yield i,j
-    def state(self)->tuple:
+    def state(self)->tuple[int,int]:
         return self.pointer,self.memory[self.pointer]
     def code_extractor(self,code)->str:
         return "".join([i for i in code if i in [">","<",",",".","+","-","[","]"]])

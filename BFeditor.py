@@ -2,6 +2,7 @@
 software:
 name :BFeditor
 
+written by Tom0427
 """
 
 import tkinter as tk
@@ -9,17 +10,37 @@ from tkinter import filedialog,ttk,messagebox
 import os
 import hashlib #テキストが変更されたかどうかを確かめたい
 from bf import BrainFuck
-from enum import Enum
+from enum import Enum,auto
 
 import webbrowser
 
+# dev tools
+
+import logging
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+
+
 class BFlags(Enum):
-    INACTIVE:int = 0
-    ACTIVE:int = 1
+    # BFeditorの状態フラグ
+    INACTIVE:int = auto()
+    ACTIVE:int = auto()
 
 
 class BFeditor:
     def __init__(self) -> None:
+
+
+        #設定ファイル
+        """
+        デフォルト設定
+        memory size:100
+        speed:10ms
+        """
+        self.text_length:int = 4
+        self.row_length:int = 10
+        self.default_base = "decimal" # decimalに設定
+
 
         self.root = tk.Tk()
         self.root.title("BFeditor")
@@ -122,17 +143,54 @@ class BFeditor:
             )
         # スクロールバーをListboxに反映
         self.memory_text["yscrollcommand"] = self.memory_scrollbar_vertical.set
-        self.memory_scrollbar_horizontal = tk.Scrollbar(
-            self.memory_frame, orient=tk.HORIZONTAL,
-            command=self.raw_code_text.xview
+
+        #進数オプションの設置
+        self.selected_option_var = tk.StringVar()
+
+        self.memory_base_options=tk.Frame(self.memory_frame)
+        self.memory_base_options_bin=tk.Radiobutton(
+            self.memory_base_options,
+            text="bin",
+            variable=self.selected_option_var,
+            value="bin", command=self.on_radio_button_selected
             )
-        self.memory_text["xscrollcommand"] = self.memory_scrollbar_horizontal.set
+        self.memory_base_options_decimal=tk.Radiobutton(
+            self.memory_base_options,
+            text="decimal",
+            variable=self.selected_option_var,
+            value="decimal",
+            command=self.on_radio_button_selected
+            )
+        self.memory_base_options_hex=tk.Radiobutton(
+            self.memory_base_options,
+            text="hex",
+            variable=self.selected_option_var,
+            value="hex",
+            command=self.on_radio_button_selected
+            )
+
+        self.selected_option_var.set(self.default_base)
+
+        match self.default_base:
+            case "decimal":
+                self.text_length=3
+            case "bin":
+                self.text_length=8
+            case "hex":
+                self.text_length=2
+            case _:
+                raise BaseException(f"{self.default_base} is unsupported option")
         # 各種ウィジェットの設置
 
         self.memory_text.configure(state="disabled")
         self.memory_text.grid(row=0,column=0,sticky=(tk.N, tk.S,tk.W,tk.E))
         self.memory_scrollbar_vertical.grid(row=0, column=1, sticky=(tk.N, tk.S))
-        self.memory_scrollbar_horizontal.grid(row=1,column=0,sticky=(tk.E,tk.W))
+
+        self.memory_base_options_bin.grid(row=0,column=0)
+        self.memory_base_options_decimal.grid(row=0,column=1)
+        self.memory_base_options_hex.grid(row=0,column=2)
+
+        self.memory_base_options.grid(row=1,column=0,columnspan=2)
 
         #code_frame
         self.code_text = tk.Text(self.code_frame,height=0)
@@ -163,15 +221,6 @@ class BFeditor:
         self.output_text.configure(state="disabled")
         self.output_text.grid(row=0,column=0)
         self.output_scrollbar.grid(row=0,column=1)
-
-        #設定ファイル
-        """
-        デフォルト設定
-        memory size:100
-        speed:10ms
-        """
-        self.text_length:int = 4
-        self.row_length:int = 10
 
         #最初はfilenameが何も設定されていない状態にする
         """
@@ -209,6 +258,11 @@ class BFeditor:
         self.output_text.configure(state="normal")
         self.output_text.delete("1.0",tk.END)
         self.output_text.configure(state="disabled")
+        # memory option immutableにする
+        self.memory_base_options_bin.configure(state="disabled")
+        self.memory_base_options_decimal.configure(state="disabled")
+        self.memory_base_options_hex.configure(state="disabled")
+
         #step表示初期化
         self.operation_STEP_label.configure(text="Steps: 0")
         #generatorの作成
@@ -219,12 +273,25 @@ class BFeditor:
         self.memory_change(0,0)
     def process(self):
         i,j = next(self.bf_generator)
-        self.memory_change(*self.brain_fuck.state())
+        pointer,value=self.brain_fuck.state()
+        self.memory_change(pointer,value)
+
+        #現在どこを実行しているのかを表示する
         self.code_highlight(i)
+
+        #input欄内のハイライト（どこまでが入力として使われたか調べる）
+        self.input_stream_highlight()
+        
         self.operation_show()
         self.output(j)
     def end(self):
-        print("終了")
+        logging.debug("プロセスの終了")
+        # memory option mutableにする
+        self.memory_base_options_bin.configure(state="normal")
+        self.memory_base_options_decimal.configure(state="normal")
+        self.memory_base_options_hex.configure(state="normal")
+        
+        #
         self.process_state = BFlags.INACTIVE
         self.operation_RUN_button.configure(text="RUN",command=self.run)
         self.input_text.configure(state="normal")
@@ -270,6 +337,22 @@ class BFeditor:
         self.code_text.tag_delete("codehighlight")
         self.code_text.tag_add("codehighlight", f"1.{i}", f"1.{i+1}")
         self.code_text.tag_config("codehighlight", background="black", foreground="white")
+    
+    def input_stream_highlight_init(self):
+        # input highlightの初期化
+        self.input_text.tag_delete("inputhighlight")
+    def input_stream_highlight(self):
+        # 考慮すべきこと
+        # 改行が含まれている場合
+        self.input_text.tag_delete("inputhighlight")
+        logging.debug(
+            self.brain_fuck.input_newline_count_list
+        )
+        for i,j in enumerate(self.brain_fuck.input_newline_count_list):
+            #i:int j:int
+            self.input_text.tag_add("inputhighlight", f"{i+1}.0", f"{i+1}.{j}")
+        self.input_text.tag_config("inputhighlight", background="gray", foreground="white")
+    
     def memory_init(self):
         self.memory_text.configure(state="normal")
         self.memory_text.delete("1.0",tk.END)
@@ -289,7 +372,17 @@ class BFeditor:
         start = f"{a+1}.{(self.text_length+1)*b}"
         end = f"{a+1}.{(self.text_length+1)*b+self.text_length}"
         self.memory_text.delete(start,end)
-        self.memory_text.insert(start,str(newdata).rjust(self.text_length,"0"))
+        selected_option = self.selected_option_var.get()
+        match selected_option:
+            case "decimal":
+                _newdata = newdata
+            case "bin":
+                _newdata = bin(newdata)[2:]
+            case "hex":
+                _newdata = hex(newdata)[2:]
+            case _:
+                raise BaseException(f"{selected_option} is unsupported option")
+        self.memory_text.insert(start,str(_newdata).rjust(self.text_length,"0"))
         self.memory_text.tag_delete("memoryhighlight")
         self.memory_text.tag_add("memoryhighlight",start,end)
         self.memory_text.tag_config("memoryhighlight", background="black", foreground="white")
@@ -309,6 +402,18 @@ class BFeditor:
         splited_filename = os.path.split(self.filename)[-1]
         return "BFeditor" if splited_filename == None else f"{splited_filename} - Bfeditor" if self.saved else f"*{splited_filename} - BFeditor"
     #on some event
+    def on_radio_button_selected(self):
+        selected_option = self.selected_option_var.get()
+        logging.debug(f"selected option: {selected_option}")
+        match selected_option:
+            case "decimal":
+                self.text_length=3
+            case "bin":
+                self.text_length=8
+            case "hex":
+                self.text_length=2
+            case _:
+                raise BaseException(f"{selected_option} is unsupported option")
     def stoped(self):
         """
         # 一時停止する
@@ -321,6 +426,12 @@ class BFeditor:
         """
         # プロセスを中断する
         """
+        logging.debug("プロセスの終了")
+        # memory option mutableにする
+        self.memory_base_options_bin.configure(state="normal")
+        self.memory_base_options_decimal.configure(state="normal")
+        self.memory_base_options_hex.configure(state="normal")
+        
         self.operation_RUN_button.configure(text="RUN",command=self.run)
         self.input_text.configure(state="normal")
         #self.root.after_cancel(self.run_id)

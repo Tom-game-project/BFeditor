@@ -12,11 +12,15 @@ root.title("ラジオボタン")
 selected_option_var = tk.StringVar()
 
 # ラジオボタンのオプションを定義
-options = ["オプション1", "オプション2", "オプション3"]
+options = ["bin", "decimal", "hex"]
 
 # ラジオボタンを作成して配置
 for option in options:
-    tk.Radiobutton(root, text=option, variable=selected_option_var, value=option, command=on_radio_button_selected).pack(anchor=tk.W)
+    tk.Radiobutton(
+        root,
+        text=option,
+        variable=selected_option_var,
+        value=option, command=on_radio_button_selected).pack(anchor=tk.W)
 selected_option_var.set("オプション2")
 # ウィンドウを表示
 root.mainloop()
